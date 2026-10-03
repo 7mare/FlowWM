@@ -1,0 +1,51 @@
+defaults:
+  - data: ogb
+  - _self_
+
+device: cuda
+seed: 42
+img_size: 224
+train_split: 0.9
+history_size: 3
+chunk_size: 3
+max_epochs: 50
+log_every: 50           # step-level wandb 日志间隔
+lr: 1.0e-4
+weight_decay: 1.0e-3
+output_dir: outputs/action_flow
+resume_from: null       # 指向 training_state.ckpt 即可断点续训
+
+backbone:
+  ckpt_path: ${oc.env:STABLEWM_HOME}/cube_full/lewm_cube_full_epoch_10_object.ckpt
+
+policy:
+  d_act: 384
+  num_layers: 8
+  num_heads: 8
+  dim_head: 48
+  mlp_dim: 1536
+  dropout: 0.0
+  freq_dim: 256
+  # action_dim 在 train_action.py 里根据 dataset & frameskip 自动推断
+
+flow_match:
+  num_train_timesteps: 1000
+  shift: 5.0
+  num_inference_steps: 20
+
+loader:
+  batch_size: 512
+  num_workers: 4
+  persistent_workers: True
+  pin_memory: True
+
+data:
+  dataset:
+    num_steps: ${eval:'${history_size} + ${chunk_size}'}
+
+wandb:
+  enabled: True
+  config:
+    entity: your_entity
+    project: lewm-action-flow
+    name: action_flow

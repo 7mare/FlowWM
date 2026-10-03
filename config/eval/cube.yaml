@@ -1,0 +1,79 @@
+defaults:
+  - launcher: local
+  - solver: cem
+  - _self_
+
+world:
+  env_name: swm/OGBCube-v0
+  num_envs: ${eval.num_eval}
+  max_episode_steps: ??? # make sure it's >= eval_budget
+  history_size: 3   #TODO: 原始history_size固定为1， 为了统一现改为3
+  frame_skip: 5
+  env_type: single
+  ob_type: states
+  multiview: False
+  width: 224
+  height: 224
+  visualize_info: False
+  terminate_at_goal: True
+
+dataset:
+  stats: ${eval.dataset_name}
+  keys_to_cache:
+    - action
+
+seed: 42
+policy: cube_full/lewm_cube_full_epoch_10 # ckpt name or random（flow 分支仅用于结果/视频输出目录命名）,该参数是用于CEM求解器的，Flow-matching action policy 的 ckpt 路径在 flow 配置项里单独指定
+
+# 选择推理通路：flow / cem(默认) / random
+policy_type: cem
+
+# Flow-matching action policy 推理配置（超参严格对齐 outputs/action_flow/config.yaml）
+flow:
+  backbone_ckpt: ${oc.env:STABLEWM_HOME}/cube_full/lewm_cube_full_epoch_10_object.ckpt
+  policy_ckpt: outputs/action_flow/policy_epoch8.ckpt
+  history_size: 3
+  chunk_size: 3
+  action_dim: 25
+  d_act: 384
+  num_layers: 8
+  num_heads: 8
+  dim_head: 48
+  mlp_dim: 1536
+  action_block: 5          # = 训练 frameskip，把 25 维 token 切回 5 维原始动作
+  num_inference_steps: 20
+
+plan_config:
+  horizon: 5
+  receding_horizon: 5
+  action_block: 5 # frameskip
+
+# evaluation from dataset (replay expert trajectories)
+eval:
+  num_eval: 50
+  goal_offset_steps: 25
+  eval_budget: 50
+  img_size: 224
+  dataset_name: ogbench/cube_single_expert
+  callables:
+    # -- set state
+    - method: set_state
+      args:
+        qpos:
+          value: qpos
+        qvel:
+          value: qvel
+    # -- set target pos
+    - method: set_target_pos
+      args:
+        cube_id:
+          value: 0
+          in_dataset: False
+        target_pos:
+          value: goal_privileged_block_0_pos
+        target_quat:
+          value: goal_privileged_block_0_quat
+
+output:
+  filename: ogb_cube_results.txt
+

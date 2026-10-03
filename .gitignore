@@ -1,0 +1,23 @@
+# 默认全部忽略
+*
+
+# 允许 git 递归进入子目录
+!*/
+
+# 只追踪 Python / yaml / markdown 源码
+!*.py
+!*.yaml
+!*.yml
+!*.md
+
+# 保留 .gitignore 自身
+!.gitignore
+!LICENSE
+
+# 强制忽略重量级 / 自动生成目录（即便上面的 !*/ 也不要扫进去）
+.venv/
+__pycache__/
+lightning_logs/
+outputs/
+.hydra/
+wandb/
